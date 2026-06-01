@@ -20,6 +20,7 @@ class LocalProvider(LLMProvider):
         n_threads: Optional[int] = None
     ):
         super().__init__(model_name=os.path.basename(model_path))
+        self.provider = "local"
 
         if not os.path.exists(model_path):
             raise FileNotFoundError(
@@ -73,7 +74,7 @@ class LocalProvider(LLMProvider):
 
         response = self.llm(
             full_prompt,
-            max_tokens=512,
+            max_tokens=self.max_tokens,
             temperature=0.7,
             top_p=0.9,
             stop=[
@@ -101,6 +102,14 @@ class LocalProvider(LLMProvider):
             }
         )
 
+        from src.telemetry.metrics import tracker
+        tracker.track_request(
+            provider="local",
+            model=self.model_name,
+            usage=usage,
+            latency_ms=latency_ms
+        )
+
         return {
             "content": content,
             "usage": usage,
@@ -121,7 +130,7 @@ class LocalProvider(LLMProvider):
 
         stream = self.llm(
             full_prompt,
-            max_tokens=512,
+            max_tokens=self.max_tokens,
             temperature=0.7,
             top_p=0.9,
             stop=[
